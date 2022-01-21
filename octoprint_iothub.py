@@ -80,7 +80,7 @@ def main():
     print("Press Ctrl+C to exit")
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(send_recurring_telemetry(device_client, octoprint_url, octoprint_api_key))
+        loop.run_until_complete(send_recurring_telemetry(device_client))
     except KeyboardInterrupt:
         print("User initiated exit")
     except Exception:
