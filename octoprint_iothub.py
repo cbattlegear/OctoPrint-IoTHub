@@ -40,7 +40,7 @@ async def send_recurring_telemetry(device_client, octoprint_url, octoprint_api_k
         await device_client.patch_twin_reported_properties(printer["temperature"])
         time.sleep(2)
 
-async def main():
+def main():
     # The connection string for a device should never be stored in code. For the sake of simplicity we're using an environment variable here.
     conn_str = os.getenv("IOTHUB_DEVICE_CONNECTION_STRING")
     octoprint_url = os.getenv("OCTOPRINT_URL").strip('/')
@@ -63,7 +63,7 @@ async def main():
 
     def twin_patch_handler(patch):        
         print("the data in the desired properties patch was: {}".format(patch))
-        
+
     # The client object is used to interact with your Azure IoT hub.
     device_client = IoTHubDeviceClient.create_from_connection_string(conn_str)
     device_client.on_twin_desired_properties_patch_received = twin_patch_handler
@@ -85,4 +85,4 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
