@@ -51,7 +51,7 @@ async def message_received_handler(message):
             "command": "M117 " + data["lcdMessage"]
         }
         header = {'X-Api-Key': ops.octoprint_api_key}
-        r = requests.post(ops.octoprint_url + '/api/printer/command', data=commands, headers=header)
+        r = requests.post(ops.octoprint_url + '/api/printer/command', json=commands, headers=header)
     print("the data in the message received was ")
     print(message.data)
     print("custom properties are")
