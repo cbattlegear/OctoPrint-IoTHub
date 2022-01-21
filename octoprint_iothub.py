@@ -11,6 +11,9 @@ import requests, json
 from azure.iot.device.aio import IoTHubDeviceClient
 from azure.iot.device import Message
 
+octoprint_url = ""
+octoprint_api_key = ""
+
 
 async def send_recurring_telemetry(device_client, octoprint_url, octoprint_api_key):
     # Connect the client.
@@ -41,6 +44,13 @@ async def twin_patch_handler(patch):
     print("the data in the desired properties patch was: {}".format(patch))
 
 async def message_received_handler(message):
+    data = json.loads(message.data)
+    if "lcdMessage" in data:
+        commands = {
+            "commands": ["M117 " + data["lcdMessage"]]
+        }
+        header = {'X-Api-Key': octoprint_api_key}
+        r = requests.get(octoprint_url + '/api/printer/command', data=commands, headers=header)
     print("the data in the message received was ")
     print(message.data)
     print("custom properties are")
