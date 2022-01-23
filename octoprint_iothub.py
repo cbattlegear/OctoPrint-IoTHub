@@ -16,6 +16,18 @@ class octoprint_settings:
         self.octoprint_url = octoprint_url
         self.octoprint_api_key = octoprint_api_key
 
+    def send_command(self, api_call, commands):
+        header = {'X-Api-Key': self.octoprint_api_key}
+        r = requests.post(self.octoprint_url + api_call, json=commands, headers=header)
+    
+    def get_status(self):
+        header = {'X-Api-Key': self.octoprint_api_key}
+        r = requests.get(self.octoprint_url + '/api/printer', headers=header)
+        printer = json.loads(r.text)
+        r = requests.get(self.octoprint_url + '/api/job', headers=header)
+        job = json.loads(r.text)
+        return {**printer, **job}
+
 ops = octoprint_settings("", "")
 
 
@@ -26,12 +38,7 @@ async def send_recurring_telemetry(device_client):
     # Send recurring telemetry
     i = 0
     while True:
-        header = {'X-Api-Key': ops.octoprint_api_key}
-        r = requests.get(ops.octoprint_url + '/api/printer', headers=header)
-        printer = json.loads(r.text)
-        r = requests.get(ops.octoprint_url + '/api/job', headers=header)
-        job = json.loads(r.text)
-        octoprint = {**printer, **job}
+        octoprint = ops.get_status()
 
         i += 1
         msg = Message(json.dumps(octoprint))
@@ -41,7 +48,7 @@ async def send_recurring_telemetry(device_client):
         msg.content_type = "application/json"
         print("sending message #" + str(i))
         await device_client.send_message(msg)
-        await device_client.patch_twin_reported_properties(printer["temperature"])
+        await device_client.patch_twin_reported_properties(octoprint["temperature"])
         time.sleep(2)
 
 async def message_received_handler(message):
@@ -50,8 +57,7 @@ async def message_received_handler(message):
         commands = {
             "command": "M117 " + data["lcdMessage"]
         }
-        header = {'X-Api-Key': ops.octoprint_api_key}
-        r = requests.post(ops.octoprint_url + '/api/printer/command', json=commands, headers=header)
+        ops.send_command('/api/printer/command', commands)
     print("the data in the message received was ")
     print(message.data)
     print("custom properties are")
@@ -59,7 +65,26 @@ async def message_received_handler(message):
     print("content Type: {0}".format(message.content_type))
     print("")
 
-async def twin_patch_handler(patch):        
+async def twin_patch_handler(patch):   
+    data = json.loads(patch)
+    if 'tool0' in data:
+        if 'target' in data['tool0']:
+            if data['tool0']['target'] <= 275:
+                commands = {
+                    "command": "target",
+                    "targets": {
+                        "tool0": data['tool0']['target']
+                    }
+                }
+                ops.send_command('/api/printer/tool', commands)
+    if 'bed' in data:
+        if 'target' in data['bed']:
+            if data['bed']['target'] <= 75:
+                commands = {
+                    "command": "target",
+                    "target": data['bed']['target']
+                }
+                ops.send_command('/api/printer/bed', commands)
     print("the data in the desired properties patch was: {}".format(patch))
 
 def main():
