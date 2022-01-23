@@ -19,7 +19,7 @@ class octoprint_settings:
     def send_command(self, api_call, commands):
         header = {'X-Api-Key': self.octoprint_api_key}
         r = requests.post(self.octoprint_url + api_call, json=commands, headers=header)
-    
+
     def get_status(self):
         header = {'X-Api-Key': self.octoprint_api_key}
         r = requests.get(self.octoprint_url + '/api/printer', headers=header)
@@ -65,8 +65,8 @@ async def message_received_handler(message):
     print("content Type: {0}".format(message.content_type))
     print("")
 
-async def twin_patch_handler(patch):   
-    data = json.loads(patch)
+async def twin_patch_handler(patch):
+    data = patch
     if 'tool0' in data:
         if 'target' in data['tool0']:
             if data['tool0']['target'] <= 275:
