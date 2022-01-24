@@ -15,6 +15,7 @@ class octoprint_settings:
     def __init__(self, octoprint_url, octoprint_api_key):
         self.octoprint_url = octoprint_url
         self.octoprint_api_key = octoprint_api_key
+        self.printing = False
 
     def send_command(self, api_call, commands):
         header = {'X-Api-Key': self.octoprint_api_key}
@@ -26,6 +27,10 @@ class octoprint_settings:
         printer = json.loads(r.text)
         r = requests.get(self.octoprint_url + '/api/job', headers=header)
         job = json.loads(r.text)
+        if job["state"] == 'Printing':
+            self.printing = True
+        else:
+            self.printing = False
         return {**printer, **job}
 
 ops = octoprint_settings("", "")
@@ -49,7 +54,7 @@ async def send_recurring_telemetry(device_client):
         print("sending message #" + str(i))
         await device_client.send_message(msg)
         await device_client.patch_twin_reported_properties(octoprint["temperature"])
-        time.sleep(2)
+        time.sleep(10)
 
 async def message_received_handler(message):
     data = json.loads(message.data)
@@ -67,25 +72,26 @@ async def message_received_handler(message):
 
 async def twin_patch_handler(patch):
     data = patch
-    if 'tool0' in data:
-        if 'target' in data['tool0']:
-            if data['tool0']['target'] <= 275:
-                commands = {
-                    "command": "target",
-                    "targets": {
-                        "tool0": data['tool0']['target']
-                    }
-                }
-                ops.send_command('/api/printer/tool', commands)
-    if 'bed' in data:
-        if 'target' in data['bed']:
-            if data['bed']['target'] <= 75:
-                commands = {
-                    "command": "target",
-                    "target": data['bed']['target']
-                }
-                ops.send_command('/api/printer/bed', commands)
     print("the data in the desired properties patch was: {}".format(patch))
+    if not ops.printing:        
+        if 'tool0' in data:
+            if 'target' in data['tool0']:
+                if data['tool0']['target'] <= 275:
+                    commands = {
+                        "command": "target",
+                        "targets": {
+                            "tool0": data['tool0']['target']
+                        }
+                    }
+                    ops.send_command('/api/printer/tool', commands)
+        if 'bed' in data:
+            if 'target' in data['bed']:
+                if data['bed']['target'] <= 75:
+                    commands = {
+                        "command": "target",
+                        "target": data['bed']['target']
+                    }
+                    ops.send_command('/api/printer/bed', commands)
 
 def main():
     # The connection string for a device should never be stored in code. For the sake of simplicity we're using an environment variable here.
