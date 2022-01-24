@@ -107,8 +107,9 @@ def main():
     device_client.on_twin_desired_properties_patch_received = twin_patch_handler
     device_client.on_message_received = message_received_handler
 
-    print("IoTHub Device Client Recurring Telemetry Sample")
+    print("Azure IoTHub OctoPrint Telemetry System")
     print("Press Ctrl+C to exit")
+    crash = False
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(send_recurring_telemetry(device_client))
@@ -116,11 +117,14 @@ def main():
         print("User initiated exit")
     except Exception:
         print("Unexpected exception!")
+        crash = True
+        time.sleep(30)
         raise
     finally:
         loop.run_until_complete(device_client.shutdown())
         loop.close()
-
+    if crash:
+        main()
 
 if __name__ == "__main__":
     main()
