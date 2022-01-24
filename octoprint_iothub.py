@@ -73,30 +73,31 @@ async def message_received_handler(message):
 async def twin_patch_handler(patch):
     data = patch
     print("the data in the desired properties patch was: {}".format(patch))
-    if not ops.printing:        
-        if 'tool0' in data:
-            if 'target' in data['tool0']:
-                if data['tool0']['target'] <= 275:
-                    commands = {
-                        "command": "target",
-                        "targets": {
-                            "tool0": data['tool0']['target']
-                        }
-                    }
-                    ops.send_command('/api/printer/tool', commands)
+    if not ops.printing:
+        tool_commands = {
+            "command": "target",
+            "targets": {}
+        }
+        for key, value in data.items():
+            if key.startswith('tool'):
+                if 'target' in value:
+                    if value['target'] <= 275:
+                        tool_commands['targets'][key] = value['target']
+        if tool_commands['targets']:
+            ops.send_command('/api/printer/tool', tool_commands)
         if 'bed' in data:
             if 'target' in data['bed']:
                 if data['bed']['target'] <= 75:
-                    commands = {
+                    bed_commands = {
                         "command": "target",
                         "target": data['bed']['target']
                     }
-                    ops.send_command('/api/printer/bed', commands)
+                    ops.send_command('/api/printer/bed', bed_commands)
 
 def main():
     # The connection string for a device should never be stored in code. For the sake of simplicity we're using an environment variable here.
     conn_str = os.getenv("IOTHUB_DEVICE_CONNECTION_STRING")
-    
+
     # Default url is localhost
     octoprint_url = os.getenv("OCTOPRINT_URL", default='http://127.0.0.1').strip('/')
     octoprint_api_key = os.getenv("OCTOPRINT_API_KEY")
