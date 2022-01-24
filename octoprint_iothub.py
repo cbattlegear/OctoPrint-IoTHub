@@ -96,7 +96,9 @@ async def twin_patch_handler(patch):
 def main():
     # The connection string for a device should never be stored in code. For the sake of simplicity we're using an environment variable here.
     conn_str = os.getenv("IOTHUB_DEVICE_CONNECTION_STRING")
-    octoprint_url = os.getenv("OCTOPRINT_URL").strip('/')
+    
+    # Default url is localhost
+    octoprint_url = os.getenv("OCTOPRINT_URL", default='http://127.0.0.1').strip('/')
     octoprint_api_key = os.getenv("OCTOPRINT_API_KEY")
 
     ops.octoprint_api_key = octoprint_api_key
